@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Local credentials
+.env
+
+# CLI outputs
+*.csv
+*.png
+
+# OS
+.DS_Store
+Thumbs.db

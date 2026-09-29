@@ -1,0 +1,8 @@
+# Binary assets: never convert line endings or diff as text
+*.pdf  binary
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.zip  binary
+# JCAMP-DX is ASCII text; keep LF so the files stay byte-identical to the generator output
+*.jdx  text eol=lf
