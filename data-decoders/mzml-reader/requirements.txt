@@ -1,0 +1,1 @@
+pytest       # tests only; the reader and the generator use the standard library only
