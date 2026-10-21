@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import html
 import re
 import sys
 import xml.etree.ElementTree as ET
@@ -363,7 +364,8 @@ class _Validator:
                 fh.seek(int(text))
                 head = fh.read(512)
                 m = re.match(rb'<(spectrum|chromatogram)\s[^>]*?\bid="([^"]*)"', head)
-                if not m or m.group(1).decode() != name or m.group(2).decode() != ref:
+                # the id attribute is raw XML text: undo entity escapes (&quot; &amp; ...) before comparing
+                if not m or m.group(1).decode() != name or html.unescape(m.group(2).decode("utf-8")) != ref:
                     self.add("MZV050", f"{label}: index offset {text} does not point at <{name} ... id=\"{ref}\">")
             if self.index_list_offset is not None:
                 ok = self.index_list_offset.isdigit()
