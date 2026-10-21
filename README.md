@@ -12,7 +12,7 @@ Parsers and workflow patterns for **open laboratory data standards**, built and 
 | Path | What it is |
 |---|---|
 | [`data-decoders/jcamp-dx-reader/`](data-decoders/jcamp-dx-reader/) | Parser, validator and writer for JCAMP-DX, the open IUPAC spectral exchange format (AFFN and SQZ/DIF/DUP compression, X/Y-check integrity validation, CLI and unit tests), demonstrated on synthetic IR and UV-Vis spectra |
-| [`data-decoders/mzml-reader/`](data-decoders/mzml-reader/) | Streaming, standard-library-only reader and validator for mzML, the open HUPO-PSI mass spectrometry format (base64 and zlib binary arrays, 32/64-bit floats, plain and indexed files, chromatograms; structural, array and index/checksum validation with coded findings; unit tests), demonstrated on a synthetic LC-MS run of caffeine and deliberately corrupted copies |
+| [`data-decoders/mzml-reader/`](data-decoders/mzml-reader/) | Streaming, standard-library-only reader, validator and writer for mzML, the open HUPO-PSI mass spectrometry format (base64 and zlib binary arrays, 32/64-bit floats, plain and indexed files; structural, array and index/checksum validation with coded findings; TIC, base peak and extracted ion chromatograms with CSV and SVG output; unit tests), demonstrated on a synthetic LC-MS run of caffeine and deliberately corrupted copies |
 
 ## Important Note
 
