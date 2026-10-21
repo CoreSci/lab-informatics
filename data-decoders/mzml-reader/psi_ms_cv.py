@@ -61,10 +61,13 @@ SELECTED_ION_MZ = ("MS:1000744", "selected ion m/z")
 CHARGE_STATE = ("MS:1000041", "charge state")
 PEAK_INTENSITY = ("MS:1000042", "peak intensity")
 COLLISION_INDUCED_DISSOCIATION = ("MS:1000133", "collision-induced dissociation")
+BEAM_TYPE_COLLISION_INDUCED_DISSOCIATION = ("MS:1000422", "beam-type collision-induced dissociation")
 COLLISION_ENERGY = ("MS:1000045", "collision energy")
 
 # ------------------------------------------------------------------ chromatograms
 TIC_CHROMATOGRAM = ("MS:1000235", "total ion current chromatogram")
+BASEPEAK_CHROMATOGRAM = ("MS:1000628", "basepeak chromatogram")
+SELECTED_ION_CURRENT_CHROMATOGRAM = ("MS:1000627", "selected ion current chromatogram")
 
 # ------------------------------------------------------------------ generic file metadata
 # Generic terms only: no instrument model, manufacturer or acquisition software.

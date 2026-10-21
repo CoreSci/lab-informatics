@@ -10,9 +10,9 @@ implements the part of the mzML 1.1 specification needed to read spectra:
 * binary arrays: base64, no compression or zlib, 32-bit or 64-bit
   little-endian floats, with declared lengths checked;
 * per spectrum: id, index, MS level, centroid or profile, scan start time and
-  its unit, m/z and intensity arrays, total ion current and precursor
-  information (MS2);
-* chromatograms: id, index, type, time and intensity arrays;
+  its unit, m/z and intensity arrays (with the intensity unit), total ion
+  current and precursor information (MS2);
+* chromatograms: id, index, type, time and intensity arrays and their units;
 * ``referenceableParamGroup`` references, expanded where they are used.
 
 Parsing is streaming: :func:`iterparse` yields one spectrum or chromatogram at
@@ -80,6 +80,7 @@ class Spectrum:
     intensity: array
     total_ion_current: Optional[float] = None
     precursors: List[Precursor] = field(default_factory=list)
+    intensity_unit: Optional[str] = None
 
 
 @dataclass
@@ -92,6 +93,7 @@ class Chromatogram:
     time: array
     time_unit: Optional[str]
     intensity: array
+    intensity_unit: Optional[str] = None
 
 
 @dataclass
@@ -345,7 +347,8 @@ def _spectrum(elem: ET.Element, groups) -> Spectrum:
     return Spectrum(id=sid, index=index, ms_level=int(level) if level is not None else None,
                     centroid=centroid, scan_start_time=rt, scan_start_time_unit=rt_unit,
                     mz=arrays[cv.MZ_ARRAY[1]][0], intensity=arrays[cv.INTENSITY_ARRAY[1]][0],
-                    total_ion_current=_float(params, cv.TOTAL_ION_CURRENT), precursors=precursors)
+                    total_ion_current=_float(params, cv.TOTAL_ION_CURRENT), precursors=precursors,
+                    intensity_unit=arrays[cv.INTENSITY_ARRAY[1]][1])
 
 
 def _chromatogram(elem: ET.Element, groups) -> Chromatogram:
@@ -358,7 +361,8 @@ def _chromatogram(elem: ET.Element, groups) -> Chromatogram:
                      (cv.TIME_ARRAY[1], cv.INTENSITY_ARRAY[1]), groups, where)
     time, unit = arrays[cv.TIME_ARRAY[1]]
     return Chromatogram(id=cid, index=index, kind=kind, time=time, time_unit=unit,
-                        intensity=arrays[cv.INTENSITY_ARRAY[1]][0])
+                        intensity=arrays[cv.INTENSITY_ARRAY[1]][0],
+                        intensity_unit=arrays[cv.INTENSITY_ARRAY[1]][1])
 
 
 # ------------------------------------------------------------------ streaming parser
