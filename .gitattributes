@@ -8,3 +8,5 @@
 *.jdx  text eol=lf
 # mzML is XML text; keep LF so the byte offsets in indexed files stay valid and the files stay byte-identical to the generator output
 *.mzML text eol=lf
+# SVG plots are text; keep LF so the files stay byte-identical to the generator output
+*.svg text eol=lf
