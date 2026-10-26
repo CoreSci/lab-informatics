@@ -1,5 +1,7 @@
 # Lab Informatics
 
+[![tests](https://github.com/CoreSci/lab-informatics/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/CoreSci/lab-informatics/actions/workflows/tests.yml)
+
 Parsers and workflow patterns for **open laboratory data standards**, built and tested on **synthetic data only**.
 
 ## Scope
