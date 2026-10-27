@@ -1,4 +1,5 @@
-# Runs the pytest suites of both data decoders on every supported Python version.
+# Runs the pytest suites of both data decoders on every supported Python version,
+# and builds the mzML requirements traceability matrix from the JUnit results.
 # Actions are pinned to full commit SHAs (tag in the comment); the token is read-only;
 # no secrets are used. Test dependencies are pinned in .github/requirements-ci.txt.
 name: tests
@@ -53,11 +54,19 @@ jobs:
         working-directory: data-decoders/mzml-reader
         run: python -m pytest -q -p no:cacheprovider --junitxml="$RUNNER_TEMP/junit/mzml-${{ matrix.python-version }}.xml"
 
-      - name: Upload JUnit reports
+      - name: Traceability matrix (mzML tools)
+        if: ${{ !cancelled() }}
+        working-directory: data-decoders/mzml-reader
+        run: >-
+          python traceability/build_matrix.py
+          "$RUNNER_TEMP/junit/mzml-${{ matrix.python-version }}.xml"
+          --out "$RUNNER_TEMP/junit/traceability-mzml-${{ matrix.python-version }}.md"
+
+      - name: Upload JUnit reports and traceability matrix
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
-          name: junit-python-${{ matrix.python-version }}
+          name: test-reports-python-${{ matrix.python-version }}
           path: ${{ runner.temp }}/junit/
           if-no-files-found: warn
           retention-days: 14

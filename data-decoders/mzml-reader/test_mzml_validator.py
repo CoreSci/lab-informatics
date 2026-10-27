@@ -79,6 +79,7 @@ def array_cv(term):
 
 
 # ------------------------------------------------------------------ negative cases
+@pytest.mark.req("VL-01", "VL-02", "VL-03", "VL-04", "VL-05", "VL-06", "VL-07")
 def test_valid_base_documents_have_no_findings(tmp_path):
     assert check(tmp_path, base_plain()).findings == []
     report = check(tmp_path, base_indexed())
@@ -87,22 +88,26 @@ def test_valid_base_documents_have_no_findings(tmp_path):
 
 @pytest.mark.parametrize("name", ["synthetic_caffeine_lc_ms_centroid.mzML", "synthetic_caffeine_profile.mzML",
                                   "synthetic_caffeine_ms2_indexed.mzML"])
+@pytest.mark.req("VL-08")
 def test_valid_samples_have_no_findings(name):
     report = mzv.validate(SAMPLES / name, strict=True)
     assert report.findings == [] and report.ok
 
 
 # ------------------------------------------------------------------ one positive case per code
+@pytest.mark.req("VL-01")
 def test_mzv001_malformed_xml(tmp_path):
     f = only(check(tmp_path, base_plain()[:-200]), "MZV001")
     assert "malformed XML" in f.message
 
 
+@pytest.mark.req("VL-01")
 def test_mzv001_not_mzml(tmp_path):
     assert "<html>" in only(check(tmp_path, b"<html/>"), "MZV001").message
 
 
 @pytest.mark.parametrize("section", mzv.REQUIRED_SECTIONS[:-1])
+@pytest.mark.req("VL-01")
 def test_mzv002_missing_section(tmp_path, section):
     data = base_plain()
     s = section.encode()
@@ -113,12 +118,14 @@ def test_mzv002_missing_section(tmp_path, section):
     assert any(f"<{section}>" in f.message for f in report.findings if f.code == "MZV002")
 
 
+@pytest.mark.req("VL-02")
 def test_mzv003_undeclared_cv(tmp_path):
     data = edit(base_plain(), b'<cv id="UO"', b'<cv id="XX"')
     f = only(check(tmp_path, data), "MZV003")
     assert "cvRef 'UO'" in f.message and "spectrum 'scan=1'" in f.message
 
 
+@pytest.mark.req("VL-02")
 def test_mzv004_param_group(tmp_path):
     data = edit(base_plain(), b'<spectrum index="1" id="scan=2" defaultArrayLength="2">',
                 b'<spectrum index="1" id="scan=2" defaultArrayLength="2"><referenceableParamGroupRef ref="nope"/>')
@@ -126,6 +133,7 @@ def test_mzv004_param_group(tmp_path):
     assert "'nope'" in f.message and "spectrum 'scan=2'" in f.message
 
 
+@pytest.mark.req("VL-02")
 def test_mzv004_resolved_group_is_fine(tmp_path):
     data = edit(base_plain(), b"<softwareList",
                 b'<referenceableParamGroupList count="1"><referenceableParamGroup id="g">'
@@ -134,6 +142,7 @@ def test_mzv004_resolved_group_is_fine(tmp_path):
     assert check(tmp_path, data).findings == []
 
 
+@pytest.mark.req("VL-02")
 def test_mzv005_instrument_configuration(tmp_path):
     data = edit(base_plain(), b'defaultInstrumentConfigurationRef="IC1"', b'defaultInstrumentConfigurationRef="IC9"')
     assert "'IC9'" in only(check(tmp_path, data), "MZV005").message
@@ -141,6 +150,7 @@ def test_mzv005_instrument_configuration(tmp_path):
     assert "spectrum 'scan=1'" in only(check(tmp_path, data), "MZV005").message
 
 
+@pytest.mark.req("VL-02")
 def test_mzv006_data_processing(tmp_path):
     data = edit(base_plain(), b'<chromatogramList count="1" defaultDataProcessingRef="DP1"',
                 b'<chromatogramList count="1" defaultDataProcessingRef="DP7"')
@@ -149,23 +159,27 @@ def test_mzv006_data_processing(tmp_path):
     assert "spectrum 'scan=2'" in only(check(tmp_path, data), "MZV006").message
 
 
+@pytest.mark.req("VL-03")
 def test_mzv010_list_counts(tmp_path):
     only(check(tmp_path, edit(base_plain(), b'<spectrumList count="2"', b'<spectrumList count="3"')), "MZV010")
     f = only(check(tmp_path, edit(base_plain(), b'<chromatogramList count="1"', b'<chromatogramList count="0"')), "MZV010")
     assert "chromatogramList" in f.message
 
 
+@pytest.mark.req("VL-03")
 def test_mzv011_index_not_consecutive(tmp_path):
     data = edit(base_plain(), b'<spectrum index="1" id="scan=2"', b'<spectrum index="2" id="scan=2"')
     f = only(check(tmp_path, data), "MZV011")
     assert "spectrum 'scan=2'" in f.message and "expected 1" in f.message
 
 
+@pytest.mark.req("VL-03")
 def test_mzv012_duplicate_id(tmp_path):
     data = edit(base_plain(), b'<spectrum index="1" id="scan=2"', b'<spectrum index="1" id="scan=1"')
     assert "spectrum 'scan=1'" in only(check(tmp_path, data), "MZV012").message
 
 
+@pytest.mark.req("VL-04")
 def test_mzv020_length_mismatch(tmp_path):
     data = edit(base_plain(), b'id="scan=2" defaultArrayLength="2"', b'id="scan=2" defaultArrayLength="3"')
     report = check(tmp_path, data)
@@ -173,6 +187,7 @@ def test_mzv020_length_mismatch(tmp_path):
     assert all("spectrum 'scan=2'" in f.message for f in report.findings)
 
 
+@pytest.mark.req("VL-04")
 def test_mzv021_undecodable(tmp_path):
     numpress = b'accession="MS:1002312" name="MS-Numpress linear prediction compression"'
     data = edit(base_plain(), array_cv(cv.NO_COMPRESSION), numpress)
@@ -180,6 +195,7 @@ def test_mzv021_undecodable(tmp_path):
     assert "spectrum 'scan=2'" in f.message and "out of scope" in f.message
 
 
+@pytest.mark.req("VL-04")
 def test_mzv021_bad_base64(tmp_path):
     data = base_plain()
     i = data.index(b"<binary>", data.index(b'id="scan=2"')) + len(b"<binary>")
@@ -187,6 +203,7 @@ def test_mzv021_bad_base64(tmp_path):
     assert "invalid base64" in only(check(tmp_path, data), "MZV021").message
 
 
+@pytest.mark.req("VL-04")
 def test_mzv022_encoded_length(tmp_path):
     data = base_plain()
     m = re.search(rb'<binaryDataArray encodedLength="(\d+)"', data)
@@ -194,6 +211,7 @@ def test_mzv022_encoded_length(tmp_path):
     assert "encodedLength" in only(check(tmp_path, data), "MZV022").message
 
 
+@pytest.mark.req("VL-04")
 def test_mzv023_missing_array(tmp_path):
     data = base_plain()
     start = data.index(b'id="scan=2"')
@@ -203,6 +221,7 @@ def test_mzv023_missing_array(tmp_path):
     assert "spectrum 'scan=2'" in f.message and "intensity array" in f.message
 
 
+@pytest.mark.req("VL-04")
 def test_mzv024_mz_and_intensity_lengths_differ(tmp_path):
     # scan=2 holds 2 points; drop one intensity value and declare it with arrayLength
     data = base_plain()
@@ -218,17 +237,20 @@ def test_mzv024_mz_and_intensity_lengths_differ(tmp_path):
     assert "2 m/z values but 1 intensities" in f.message
 
 
+@pytest.mark.req("VL-05")
 def test_mzv030_no_representation(tmp_path):
     data = edit(base_plain(), gen.cv_param(cv.CENTROID_SPECTRUM).encode(), b"")
     f = only(check(tmp_path, data), "MZV030")
     assert f.level == "warning" and "spectrum 'scan=1'" in f.message
 
 
+@pytest.mark.req("VL-05")
 def test_mzv031_mz_decreasing(tmp_path):
     report = mzv.validate(INVALID / "invalid_mz_order.mzML")
     assert "point 11" in only(report, "MZV031").message
 
 
+@pytest.mark.req("VL-05")
 def test_mzv032_negative_intensity(tmp_path):
     data = base_plain()
     start = data.index(b'id="scan=2"')
@@ -240,17 +262,20 @@ def test_mzv032_negative_intensity(tmp_path):
     assert f.level == "warning" and "1 negative" in f.message
 
 
+@pytest.mark.req("VL-05")
 def test_mzv033_no_ms_level(tmp_path):
     data = edit(base_plain(), gen.cv_param(cv.MS_LEVEL, 1).encode(), b"")
     assert "spectrum 'scan=1'" in only(check(tmp_path, data), "MZV033").message
 
 
+@pytest.mark.req("VL-05")
 def test_mzv034_msn_without_precursor(tmp_path):
     data = base_plain()
     data = data[:data.index(b"<precursorList")] + data[data.index(b"</precursorList>") + len(b"</precursorList>"):]
     assert "spectrum 'scan=2'" in only(check(tmp_path, data), "MZV034").message
 
 
+@pytest.mark.req("VL-06")
 def test_mzv040_chromatogram_lengths(tmp_path):
     chrom_start = base_plain().index(b"<chromatogram ")
     data = base_plain()
@@ -264,17 +289,20 @@ def test_mzv040_chromatogram_lengths(tmp_path):
     assert "chromatogram 'TIC'" in only(check(tmp_path, data), "MZV040").message
 
 
+@pytest.mark.req("VL-06")
 def test_mzv041_chromatogram_time_decreasing(tmp_path):
     spectra, _ = base_spectra()
     data = gen.plain_mzml("t", spectra, [gen.tic_chromatogram_xml([1.01, 1.0], [1.0, 2.0], 64)], has_msn=True)
     assert "chromatogram 'TIC'" in only(check(tmp_path, data), "MZV041").message
 
 
+@pytest.mark.req("VL-07")
 def test_mzv050_bad_offset(tmp_path):
     report = mzv.validate(INVALID / "invalid_index_offset.mzML")
     assert "spectrum 'scan=3'" in only(report, "MZV050").message
 
 
+@pytest.mark.req("VL-07")
 def test_mzv050_offset_points_at_other_id(tmp_path):
     data = base_indexed()
     pos2 = re.search(rb'<offset idRef="scan=2">(\d+)<', data).group(1)
@@ -283,6 +311,7 @@ def test_mzv050_offset_points_at_other_id(tmp_path):
     assert "spectrum 'scan=1'" in only(check(tmp_path, data), "MZV050").message
 
 
+@pytest.mark.req("VL-07")
 def test_mzv051_index_list_offset(tmp_path):
     data = base_indexed()
     m = re.search(rb"<indexListOffset>(\d+)<", data)
@@ -290,11 +319,13 @@ def test_mzv051_index_list_offset(tmp_path):
     only(check(tmp_path, data), "MZV051")
 
 
+@pytest.mark.req("VL-07")
 def test_mzv052_checksum(tmp_path):
     report = mzv.validate(INVALID / "invalid_checksum.mzML")
     assert "fileChecksum" in only(report, "MZV052").message
 
 
+@pytest.mark.req("VL-07")
 def test_mzv053_not_in_index(tmp_path):
     data = base_indexed()
     data = re.sub(rb'\s*<index name="chromatogram">.*?</index>', b"", data, flags=re.S)
@@ -304,12 +335,14 @@ def test_mzv053_not_in_index(tmp_path):
     assert f.level == "warning" and "'TIC'" in f.message
 
 
+@pytest.mark.req("VL-07")
 def test_edit_in_indexed_file_keeps_index_valid(tmp_path):
     """The test helper itself: an edit that shifts bytes, then reindex, leaves only the intended finding."""
     data = edit(base_indexed(), b'<spectrumList count="2"', b'<spectrumList count="12"', indexed=True)
     only(check(tmp_path, data), "MZV010")
 
 
+@pytest.mark.req("VL-01")
 def test_every_code_is_tested():
     tested = set(re.findall(r"def test_(mzv\d{3})_", Path(__file__).read_text(encoding="utf-8")))
     assert {c.lower() for c in mzv.CHECKS} <= tested
@@ -317,10 +350,12 @@ def test_every_code_is_tested():
 
 # ------------------------------------------------------------------ invalid samples
 @pytest.mark.parametrize("name, code", [(n, c) for n, (_, c) in bad.INVALID.items()])
+@pytest.mark.req("VL-08")
 def test_invalid_sample_yields_exactly_its_finding(name, code):
     only(mzv.validate(INVALID / name), code)
 
 
+@pytest.mark.req("VL-08", "DG-01")
 def test_invalid_samples_are_reproducible(tmp_path):
     for fresh in bad.generate(tmp_path):
         shipped = INVALID / fresh.name
@@ -331,6 +366,7 @@ def test_invalid_samples_are_reproducible(tmp_path):
             assert fresh.read_bytes() == shipped.read_bytes(), fresh.name
 
 
+@pytest.mark.req("VL-08")
 def test_invalid_samples_are_otherwise_readable():
     """Apart from the indexed defects, the reader still opens the corrupted files where it can."""
     for name in ("invalid_spectrum_count.mzML", "invalid_duplicate_id.mzML", "invalid_mz_order.mzML",
@@ -341,6 +377,7 @@ def test_invalid_samples_are_otherwise_readable():
 
 
 # ------------------------------------------------------------------ strict mode and CLI
+@pytest.mark.req("VL-09")
 def test_strict_turns_warnings_into_errors(tmp_path):
     data = edit(base_plain(), gen.cv_param(cv.CENTROID_SPECTRUM).encode(), b"")
     assert check(tmp_path, data).ok
@@ -348,6 +385,7 @@ def test_strict_turns_warnings_into_errors(tmp_path):
     assert not report.ok and report.findings[0].level == "error"
 
 
+@pytest.mark.req("VL-09")
 def test_cli_exit_codes(tmp_path, capsys):
     good = [str(SAMPLES / n) for n in ("synthetic_caffeine_profile.mzML", "synthetic_caffeine_ms2_indexed.mzML")]
     assert mzv.main(good) == 0
@@ -357,6 +395,7 @@ def test_cli_exit_codes(tmp_path, capsys):
     assert mzv.main([str(tmp_path / "missing.mzML")]) == 1
 
 
+@pytest.mark.req("VL-09")
 def test_cli_strict(tmp_path, capsys):
     path = tmp_path / "warn.mzML"
     path.write_bytes(edit(base_plain(), gen.cv_param(cv.CENTROID_SPECTRUM).encode(), b""))

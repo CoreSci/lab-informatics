@@ -139,6 +139,10 @@ python generate_example_plots.py
 
 # unit tests
 python -m pytest -q
+
+# traceability matrix from a test run's JUnit report (see Test plan and traceability)
+python -m pytest -q --junitxml=junit.xml
+python traceability/build_matrix.py junit.xml --out traceability-matrix.md
 ```
 
 ```
@@ -227,7 +231,17 @@ The chromatogram tests check TIC, BPC and XIC against sums computed directly fro
 
 The writer tests round-trip every combination of 32/64-bit, zlib or not, and plain or indexed, plus all three sample files, and check that each output passes `mzml_validator.py --strict`, that the index offsets and checksum are correct, and that every kind of invalid input is refused.
 
-The full suite passes on Python 3.12.
+In CI, the `tests` workflow runs the full suite on Python 3.9, 3.10, 3.11, 3.12, 3.13, 3.14 and 3.15 on every push to `main` and on pull requests. Before the workflow was added, the suite passed on all seven versions in Docker (`python:3.x-slim`, 2026-10-23).
+
+## Test plan and traceability
+
+- **Test plan:** [`docs/test-plan.md`](docs/test-plan.md): scope, a risk-based approach, environments, entry and exit criteria, and the known gaps.
+- **Requirements:** [`traceability/requirements.tsv`](traceability/requirements.tsv): 38 requirements with their source: 37 are claims made in this README, one (TR-01) covers the traceability tooling itself.
+- **Links:** every test carries `@pytest.mark.req(...)` with the requirement ids it verifies. `conftest.py` writes them into the JUnit XML report.
+- **Matrix:** [`traceability/build_matrix.py`](traceability/build_matrix.py) builds the requirements → tests → results matrix from a real JUnit report. It lists requirements without tests and tests without requirements, and rejects unknown ids. The CI workflow builds it for every Python version, as an artifact next to the JUnit reports.
+- **Snapshot:** [`docs/traceability-matrix.md`](docs/traceability-matrix.md) is one generated matrix, committed as a snapshot. Its header records when, from what and on which Python version it was generated. It is regenerated, never edited by hand.
+
+One requirement has no automated test yet: the reader's command-line summary (RD-11). It is listed in the matrix and in the test plan's known gaps.
 
 ## Notes
 

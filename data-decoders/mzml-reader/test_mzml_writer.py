@@ -58,6 +58,7 @@ def as_float32(values):
 @pytest.mark.parametrize("bits", [32, 64])
 @pytest.mark.parametrize("zlib_compressed", [False, True])
 @pytest.mark.parametrize("indexed", [False, True])
+@pytest.mark.req("WR-02", "WR-03")
 def test_round_trip_every_encoding(tmp_path, bits, zlib_compressed, indexed):
     spectra, chroms = [spectrum(), ms2()], [chromatogram()]
     path, run = write_and_read(tmp_path, spectra, chroms, bits=bits, zlib_compressed=zlib_compressed, indexed=indexed)
@@ -76,6 +77,7 @@ def test_round_trip_every_encoding(tmp_path, bits, zlib_compressed, indexed):
 
 @pytest.mark.parametrize("name", SAMPLE_NAMES)
 @pytest.mark.parametrize("indexed", [False, True])
+@pytest.mark.req("WR-02", "WR-03")
 def test_samples_round_trip_and_validate(tmp_path, name, indexed):
     source = mzml.read(SAMPLES / name)
     path, back = write_and_read(tmp_path, source.spectra, source.chromatograms, indexed=indexed)
@@ -83,12 +85,14 @@ def test_samples_round_trip_and_validate(tmp_path, name, indexed):
     assert mzv.validate(path, strict=True).findings == []
 
 
+@pytest.mark.req("WR-02")
 def test_profile_and_no_time():
     data = writer.to_bytes([spectrum(centroid=False, scan_start_time=None, scan_start_time_unit=None)])
     (sp,) = mzml.read(io.BytesIO(data)).spectra
     assert sp.centroid is False and sp.scan_start_time is None
 
 
+@pytest.mark.req("WR-02", "WR-03")
 def test_empty_spectrum_and_empty_file(tmp_path):
     path, run = write_and_read(tmp_path, [spectrum(mz=[], intensity=[], total_ion_current=0.0)], indexed=True)
     assert len(run.spectra[0].mz) == 0 and mzv.validate(path, strict=True).findings == []
@@ -96,6 +100,7 @@ def test_empty_spectrum_and_empty_file(tmp_path):
     assert run.spectra == [] and mzv.validate(path, strict=True).findings == []
 
 
+@pytest.mark.req("WR-02", "WR-03")
 def test_traces_can_be_written_as_chromatograms(tmp_path):
     result = chrom.extract(SAMPLES / SAMPLE_NAMES[0], [(195.0877, 10, "ppm")])
     chroms = [result.tic.to_chromatogram("TIC", 0), result.bpc.to_chromatogram("BPC", 1),
@@ -107,23 +112,27 @@ def test_traces_can_be_written_as_chromatograms(tmp_path):
     assert mzv.validate(path, strict=True).findings == []
 
 
+@pytest.mark.req("WR-01", "WR-03")
 def test_ids_are_escaped(tmp_path):
     path, run = write_and_read(tmp_path, [spectrum('a"<&>b')], indexed=True)
     assert run.spectra[0].id == 'a"<&>b' and mzv.validate(path, strict=True).findings == []
 
 
+@pytest.mark.req("WR-01")
 def test_writes_to_a_file_object():
     buf = io.BytesIO()
     writer.write(buf, [spectrum()])
     assert buf.getvalue() == writer.to_bytes([spectrum()])
 
 
+@pytest.mark.req("WR-01")
 def test_output_is_deterministic_and_lf_only():
     a = writer.to_bytes([spectrum(), ms2()], [chromatogram()], indexed=True, zlib_compressed=False)
     assert a == writer.to_bytes([spectrum(), ms2()], [chromatogram()], indexed=True, zlib_compressed=False)
     assert b"\r" not in a
 
 
+@pytest.mark.req("WR-05")
 def test_metadata_is_generic():
     text = writer.to_bytes([spectrum()]).decode("utf-8")
     assert 'name="instrument model" value=""' in text and 'value="mzml_writer.py"' in text
@@ -131,6 +140,7 @@ def test_metadata_is_generic():
 
 
 # ------------------------------------------------------------------ indexed output
+@pytest.mark.req("WR-01")
 def test_indexed_offsets_and_checksum():
     data = writer.to_bytes([spectrum(), ms2()], [chromatogram()], indexed=True)
     offsets = re.findall(rb'<offset idRef="([^"]+)">(\d+)</offset>', data)
@@ -156,11 +166,13 @@ def test_indexed_offsets_and_checksum():
     (dict(scan_start_time_unit="hour"), "time unit 'hour'"),
     (dict(intensity_unit="volts"), "intensity unit 'volts'"),
 ])
+@pytest.mark.req("WR-04")
 def test_invalid_spectrum_is_refused(bad, message):
     with pytest.raises(ValueError, match=re.escape(message)):
         writer.to_bytes([spectrum(**bad)])
 
 
+@pytest.mark.req("WR-04")
 def test_invalid_input_is_refused():
     with pytest.raises(ValueError, match="duplicate spectrum id"):
         writer.to_bytes([spectrum("x"), spectrum("x")])

@@ -1,0 +1,39 @@
+id	area	requirement	source
+RD-01	reader	Reads plain <mzML> and <indexedmzML> files and returns the same spectra from both; the index is not used by the reader	README: Reader / Wrappers
+RD-02	reader	Streams the file: each spectrum or chromatogram is yielded as soon as it ends and its element is freed so memory does not grow with the number of spectra	README: Reader / Streaming
+RD-03	reader	Decodes base64 binary arrays with no compression or zlib as 32-bit or 64-bit little-endian floats	README: Reader / Binary arrays
+RD-04	reader	Returns per spectrum: id, index, MS level, centroid or profile, scan start time and its unit, m/z and intensity arrays, total ion current	README: Reader / Per spectrum
+RD-05	reader	Returns precursor information for MS2 spectra: isolation window, selected ion m/z, charge, intensity, activation, collision energy	README: Reader / Per spectrum
+RD-06	reader	Returns chromatograms: id, index, type, time array and unit, intensity array	README: Reader / Chromatograms
+RD-07	reader	Expands referenceableParamGroupRef where it is used and reports an unknown group	README: Reader / Param groups
+RD-08	reader	Raises MzMLError for MS-Numpress or any other compression except zlib, and for a missing or unsupported array type, data type or compression term	README: Reader / Errors
+RD-09	reader	Raises MzMLError for a decoded length that does not match defaultArrayLength or arrayLength, a wrong encodedLength, and invalid base64 or zlib data	README: Reader / Errors
+RD-10	reader	Raises MzMLError for malformed XML and for a document that is not mzML	README: Reader / Errors
+RD-11	reader	The command line prints a summary of each file and exits with status 1 when a file cannot be read	README: Run
+VL-01	validator	Reports malformed XML and missing required top-level elements (MZV001-MZV002)	README: Validator table
+VL-02	validator	Reports unresolved cvRef / unitCvRef / param group / instrument configuration / data processing references (MZV003-MZV006)	README: Validator table
+VL-03	validator	Reports wrong list counts, non-consecutive indices and duplicate ids (MZV010-MZV012)	README: Validator table
+VL-04	validator	Reports array length, decoding, encodedLength and missing-array problems (MZV020-MZV024)	README: Validator table
+VL-05	validator	Reports spectrum content problems: no centroid/profile term, decreasing m/z, negative intensities, no MS level, MSn without precursor (MZV030-MZV034)	README: Validator table
+VL-06	validator	Reports chromatogram length mismatches and decreasing time (MZV040-MZV041)	README: Validator table
+VL-07	validator	Verifies indexed files: offsets, indexListOffset, SHA-1 checksum and index coverage (MZV050-MZV053)	README: Validator table
+VL-08	validator	Each invalid sample yields exactly its documented finding and the valid samples yield none	README: Data / invalid samples table
+VL-09	validator	The command line exits with status 1 on any error and --strict turns warnings into errors	README: Validator / Run
+CH-01	chromatograms	TIC is the sum of all intensities of each MS1 spectrum	README: Chromatograms table
+CH-02	chromatograms	BPC is the largest intensity of each MS1 spectrum with the m/z of that peak	README: Chromatograms table
+CH-03	chromatograms	XIC sums the intensities inside a centre +/- tolerance window in ppm or Da, bounds included	README: Chromatograms table
+CH-04	chromatograms	Only MS1 spectra contribute; other spectra are skipped and counted	README: Chromatograms
+CH-05	chromatograms	Times keep the unit of the file; mixed units in one file are an error	README: Chromatograms / Units as stored
+CH-06	chromatograms	The computed TIC is compared with the declared TIC chromatogram and per-spectrum total ion current values, and differences are reported	README: Chromatograms / TIC cross-check
+CH-07	chromatograms	Writes all traces as CSV with one row per MS1 spectrum	README: Chromatograms / Output
+CH-08	chromatograms	Draws a trace as an SVG line plot with labelled axes and units, identical on every run	README: Chromatograms / Output
+CH-09	chromatograms	The command line prints a summary with the TIC cross-check and writes CSV and SVG on request	README: Run
+WR-01	writer	Writes plain mzML and indexedmzML with correct byte offsets, indexListOffset and SHA-1 checksum	README: Writer table
+WR-02	writer	What it writes reads back to the same values (64-bit exact, 32-bit to float32 precision) for every encoding combination	README: Writer
+WR-03	writer	Every file it writes passes mzml_validator.py --strict with no findings	README: Writer
+WR-04	writer	Refuses input that would make an invalid or ambiguous file with ValueError	README: Writer / Input checks
+WR-05	writer	Uses generic PSI-MS metadata terms only	README: Writer / Metadata
+DG-01	data	The sample generators are deterministic: the same seed gives the same files (decoded values for zlib files)	README: Notes / Reproducibility
+DG-02	data	The caffeine [M+H]+ isotope pattern is computed from natural abundances (m/z 195.0877, M+1 about 10.3 %)	README: Data
+DG-03	data	Sample files use generic instrument metadata only and stay small	README: Data
+TR-01	traceability	The matrix generator maps test markers to JUnit results, lists requirements without tests and rejects unknown requirement ids	docs/test-plan.md

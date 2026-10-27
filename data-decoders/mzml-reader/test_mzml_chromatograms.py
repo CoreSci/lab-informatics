@@ -52,6 +52,7 @@ def tic_chromatogram(time, values, unit="minute"):
 
 
 # ------------------------------------------------------------------ windows
+@pytest.mark.req("CH-03")
 def test_mz_window_ppm_and_da():
     lo, hi = chrom.mz_window(200.0, 10, "ppm")
     assert (lo, hi) == pytest.approx((199.998, 200.002))
@@ -60,12 +61,14 @@ def test_mz_window_ppm_and_da():
 
 
 @pytest.mark.parametrize("tol, unit", [(-1, "ppm"), (5, "mmu")])
+@pytest.mark.req("CH-03")
 def test_mz_window_rejects_bad_input(tol, unit):
     with pytest.raises(ValueError):
         chrom.mz_window(200.0, tol, unit)
 
 
 # ------------------------------------------------------------------ TIC / BPC / XIC on the synthetic run
+@pytest.mark.req("CH-01")
 def test_tic_is_the_sum_of_each_ms1_spectrum(run, result):
     assert len(result.tic.time) == 60 and result.ms1_spectra == 60 and result.skipped_spectra == 0
     assert list(result.tic.time) == [s.scan_start_time for s in run.spectra]
@@ -74,11 +77,13 @@ def test_tic_is_the_sum_of_each_ms1_spectrum(run, result):
     assert result.tic.time_unit == "minute" and result.tic.intensity_unit == "number of detector counts"
 
 
+@pytest.mark.req("CH-01")
 def test_tic_peaks_at_the_elution_apex(result):
     t, _ = result.tic.apex()
     assert t == pytest.approx(2.80, abs=0.02)
 
 
+@pytest.mark.req("CH-02")
 def test_bpc_is_the_largest_peak_with_its_mz(run, result):
     for s, value, mz in zip(run.spectra, result.bpc.intensity, result.bpc.mz):
         i = max(range(len(s.intensity)), key=s.intensity.__getitem__)
@@ -89,6 +94,7 @@ def test_bpc_is_the_largest_peak_with_its_mz(run, result):
     assert result.bpc.mz[i] == pytest.approx(CAFFEINE_MH, abs=0.002)
 
 
+@pytest.mark.req("CH-03")
 def test_xic_of_caffeine_peaks_at_2_80(result):
     x = result.xics[0]
     assert x.kind == "XIC" and x.window == pytest.approx(chrom.mz_window(CAFFEINE_MH, 10, "ppm"))
@@ -99,11 +105,13 @@ def test_xic_of_caffeine_peaks_at_2_80(result):
     assert x.intensity[0] < peak * 1e-3 and x.intensity[-1] < peak * 1e-3
 
 
+@pytest.mark.req("CH-03")
 def test_xic_away_from_the_compound_is_flat(result):
     assert set(result.xics[1].intensity) == {0.0}
     assert len(result.xics[1].intensity) == 60
 
 
+@pytest.mark.req("CH-03")
 def test_ppm_and_da_tolerances_agree_at_the_same_width(run):
     da = CAFFEINE_MH * 10 / 1e6
     by_ppm = chrom.extract(CENTROID, [(CAFFEINE_MH, 10, "ppm"), (CAFFEINE_MH, da, "Da")])
@@ -111,6 +119,7 @@ def test_ppm_and_da_tolerances_agree_at_the_same_width(run):
     assert by_ppm.xics[0].window == pytest.approx(by_ppm.xics[1].window)
 
 
+@pytest.mark.req("CH-03")
 def test_xic_sums_every_peak_inside_the_window(run):
     lo, hi = chrom.mz_window(196.0, 1.5, "Da")             # holds M, M+1 and M+2 of caffeine
     x = chrom.xic(CENTROID, 196.0, 1.5, "Da")
@@ -118,6 +127,7 @@ def test_xic_sums_every_peak_inside_the_window(run):
     assert list(x.intensity) == expected
 
 
+@pytest.mark.req("CH-01", "CH-02", "CH-03")
 def test_convenience_functions_match_extract(result):
     assert chrom.tic(CENTROID) == result.tic
     assert chrom.bpc(CENTROID) == result.bpc
@@ -125,11 +135,13 @@ def test_convenience_functions_match_extract(result):
 
 
 # ------------------------------------------------------------------ edge cases
+@pytest.mark.req("CH-03")
 def test_empty_window_gives_zeros():
     x = chrom.xic(CENTROID, CAFFEINE_MH + 0.5, 0.0, "Da")     # zero width, between peaks
     assert len(x.intensity) == 60 and set(x.intensity) == {0.0}
 
 
+@pytest.mark.req("CH-04")
 def test_ms2_spectra_are_excluded():
     result = chrom.extract(INDEXED, [(138.0662, 20, "ppm")])     # a product ion: only in MS2 spectra
     assert result.ms1_spectra == 3 and result.skipped_spectra == 3
@@ -137,17 +149,20 @@ def test_ms2_spectra_are_excluded():
     assert set(result.xics[0].intensity) == {0.0}
 
 
+@pytest.mark.req("CH-05")
 def test_units_are_kept_as_stored():
     t = chrom.tic(doc([(0, 30.0, [100.0], [5.0], 1), (1, 31.5, [100.0], [7.0], 1)], unit="second"))
     assert t.time_unit == "second" and list(t.time) == [30.0, 31.5] and list(t.intensity) == [5.0, 7.0]
 
 
+@pytest.mark.req("CH-05")
 def test_mixed_time_units_are_an_error():
     source = doc([(0, 1.0, [100.0], [5.0], 1), (1, 70.0, [100.0], [7.0], 1)], unit=["minute", "second"])
     with pytest.raises(mzml.MzMLError, match="mixed units"):
         chrom.tic(source)
 
 
+@pytest.mark.req("CH-01", "CH-02", "CH-04")
 def test_empty_spectrum_and_no_ms1():
     result = chrom.extract(doc([(0, 1.0, [], [], 1)]))
     assert list(result.tic.intensity) == [0.0] and math.isnan(result.bpc.mz[0])
@@ -156,12 +171,14 @@ def test_empty_spectrum_and_no_ms1():
 
 
 # ------------------------------------------------------------------ TIC cross-check
+@pytest.mark.req("CH-06")
 def test_tic_check_agrees_on_the_centroid_sample(result):
     sources = [c.source for c in result.checks]
     assert sources == ["declared TIC chromatogram 'TIC'", "spectrum total ion current"]
     assert all(c.ok and c.compared == 60 for c in result.checks)
 
 
+@pytest.mark.req("CH-06")
 def test_tic_check_reports_a_declared_tic_that_includes_ms2():
     declared, per_spectrum = chrom.extract(INDEXED).checks
     assert not declared.ok and declared.compared == 3 and declared.mismatches == 0
@@ -169,6 +186,7 @@ def test_tic_check_reports_a_declared_tic_that_includes_ms2():
     assert per_spectrum.ok and per_spectrum.compared == 6        # MS2 spectra declare their own TIC
 
 
+@pytest.mark.req("CH-06")
 def test_tic_check_reports_differences():
     tic = tic_chromatogram([1.0, 2.0], [5.0, 99.0])
     result = chrom.extract(doc([(0, 1.0, [100.0], [5.0], 1), (1, 2.0, [100.0], [7.0], 1)], [tic]))
@@ -179,6 +197,7 @@ def test_tic_check_reports_differences():
     assert per_spectrum.ok
 
 
+@pytest.mark.req("CH-06")
 def test_tic_check_wrong_spectrum_value():
     xml = doc([(0, 1.0, [100.0], [5.0], 1)]).getvalue().replace(b'name="total ion current" value="5.0"',
                                                                 b'name="total ion current" value="6.0"')
@@ -186,6 +205,7 @@ def test_tic_check_wrong_spectrum_value():
     assert check.mismatches == 1 and not check.ok
 
 
+@pytest.mark.req("CH-05", "CH-06")
 def test_tic_check_does_not_convert_units():
     tic = tic_chromatogram([60.0], [5.0], unit="second")
     declared = chrom.extract(doc([(0, 1.0, [100.0], [5.0], 1)], [tic])).checks[0]
@@ -193,6 +213,7 @@ def test_tic_check_does_not_convert_units():
 
 
 # ------------------------------------------------------------------ CSV
+@pytest.mark.req("CH-07")
 def test_csv_output(result, tmp_path):
     path = tmp_path / "out.csv"
     chrom.write_csv(result, path)
@@ -206,12 +227,14 @@ def test_csv_output(result, tmp_path):
     assert b"\r\n" not in path.read_bytes()
 
 
+@pytest.mark.req("CH-07")
 def test_csv_leaves_missing_bpc_mz_empty():
     text = chrom.csv_text(chrom.extract(doc([(0, 1.0, [], [], 1)])))
     assert text.splitlines()[1].split(",")[4] == ""
 
 
 # ------------------------------------------------------------------ SVG
+@pytest.mark.req("CH-08")
 def test_svg_is_well_formed_and_labelled(result):
     svg = chrom.svg_plot(result.xics[0])
     root = ET.fromstring(svg)
@@ -222,16 +245,19 @@ def test_svg_is_well_formed_and_labelled(result):
     assert len(line.get("points").split()) == 60
 
 
+@pytest.mark.req("CH-08")
 def test_svg_is_deterministic(result):
     assert chrom.svg_plot(result.tic) == chrom.svg_plot(chrom.extract(CENTROID).tic)
 
 
+@pytest.mark.req("CH-08")
 def test_svg_of_an_empty_trace():
     svg = chrom.svg_plot(chrom.extract(doc([(0, 1.0, [100.0], [5.0], 2)])).tic)
     root = ET.fromstring(svg)
     assert not list(root.iter("{http://www.w3.org/2000/svg}polyline"))
 
 
+@pytest.mark.req("CH-08", "DG-01")
 def test_example_plots_are_reproducible(tmp_path):
     for fresh in plots.generate(tmp_path):
         shipped = (SAMPLES / "output" / fresh.name).read_bytes()
@@ -239,6 +265,7 @@ def test_example_plots_are_reproducible(tmp_path):
         assert len(shipped) < 10_000
 
 
+@pytest.mark.req("CH-08")
 def test_ticks_are_round_numbers():
     assert chrom._ticks(0, 2.03) == [0, 0.5, 1, 1.5, 2]
     assert chrom._ticks(1.6, 3.96) == [2, 2.5, 3, 3.5]
@@ -246,6 +273,7 @@ def test_ticks_are_round_numbers():
 
 
 # ------------------------------------------------------------------ trace -> chromatogram
+@pytest.mark.req("CH-02", "CH-03")
 def test_trace_to_chromatogram(result):
     c = result.bpc.to_chromatogram()
     assert (c.id, c.kind, c.time_unit) == ("BPC", "basepeak chromatogram", "minute")
@@ -253,6 +281,7 @@ def test_trace_to_chromatogram(result):
 
 
 # ------------------------------------------------------------------ CLI
+@pytest.mark.req("CH-09")
 def test_cli(tmp_path, capsys):
     csv_path, svg_path = tmp_path / "c.csv", tmp_path / "x.svg"
     assert chrom.main([str(CENTROID), "--xic", "195.0877,10,ppm", "--csv", str(csv_path), "--svg", str(svg_path)]) == 0
@@ -264,6 +293,7 @@ def test_cli(tmp_path, capsys):
     assert chrom.main([str(tmp_path / "missing.mzML")]) == 1
 
 
+@pytest.mark.req("CH-09")
 def test_cli_rejects_bad_xic():
     with pytest.raises(SystemExit):
         chrom.main([str(CENTROID), "--xic", "195.0877,10,mmu"])
